@@ -115,6 +115,20 @@ jobs:
           releaseDraft: true
           prerelease: false
 
+      - name: Package Portable Studio (Windows)
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "crates/nautilus-studio/src-tauri/target/release/nautilus-studio.exe" -DestinationPath "nautilus-studio-portable-windows-x86_64.zip"
+
+      - name: Upload Portable Studio (Windows)
+        if: matrix.platform == 'windows-latest'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: nautilus-studio-portable-windows-x86_64.zip
+          draft: true
+          tag_name: ${{ github.ref_name }}
+
   publish-release:
     name: Publish Draft Release
     needs: [build-cli, build-studio]
