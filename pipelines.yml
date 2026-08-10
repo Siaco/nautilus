@@ -1,0 +1,8 @@
+version: "1.0"
+pipeline:
+  name: "Default Pipeline"
+  stages:
+    - id: "hello"
+      plugin: "shell"
+      args:
+        command: "echo 'Hello from Nautilus!'"
