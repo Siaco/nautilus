@@ -2327,6 +2327,7 @@ name = "nautilus-core"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "petgraph",
  "serde",
  "serde_json",
