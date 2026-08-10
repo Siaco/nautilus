@@ -1,3 +1,4 @@
+pub mod builtins;
 pub mod types;
 
 pub use types::{ExecutionContext, ExecutionOutput, Plugin, PluginError};
