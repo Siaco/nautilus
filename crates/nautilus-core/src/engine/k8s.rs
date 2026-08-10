@@ -85,6 +85,5 @@ impl KubeClient {
 mod tests {
     #[tokio::test]
     async fn test_kubeclient_compiles() {
-        assert!(true);
     }
 }

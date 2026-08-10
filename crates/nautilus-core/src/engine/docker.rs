@@ -71,6 +71,5 @@ impl DockerClient {
 mod tests {
     #[test]
     fn test_docker_compiles() {
-        assert!(true);
     }
 }
