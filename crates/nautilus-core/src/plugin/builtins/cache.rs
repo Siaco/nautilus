@@ -13,6 +13,7 @@ impl Plugin for ArtifactCachePlugin {
         &self,
         ctx: &ExecutionContext,
         args: &Option<HashMap<String, String>>,
+        _log_sender: Option<tokio::sync::mpsc::Sender<String>>,
     ) -> Result<ExecutionOutput, PluginError> {
         let args = args.as_ref().ok_or_else(|| {
             PluginError::ExecutionFailed(

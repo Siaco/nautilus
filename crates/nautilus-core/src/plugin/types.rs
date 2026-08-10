@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use thiserror::Error;
+use tokio::sync::mpsc;
 
 #[derive(Debug, Clone)]
 pub struct ExecutionContext {
@@ -28,5 +29,6 @@ pub trait Plugin: Send + Sync {
         &self,
         ctx: &ExecutionContext,
         args: &Option<HashMap<String, String>>,
+        log_sender: Option<mpsc::Sender<String>>,
     ) -> Result<ExecutionOutput, PluginError>;
 }

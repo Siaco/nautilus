@@ -20,6 +20,7 @@ impl DockerClient {
         &self,
         tag: &str,
         dockerfile_content: &str,
+        log_sender: Option<tokio::sync::mpsc::Sender<String>>,
     ) -> Result<(), anyhow::Error> {
         // Because bollard requires a tarball for context, we construct an in-memory tarball containing the Dockerfile.
         let mut header = tar::Header::new_gnu();
@@ -46,8 +47,15 @@ impl DockerClient {
             match msg {
                 Ok(info) => {
                     if let Some(stream) = info.stream {
-                        print!("{}", stream);
+                        if let Some(s) = &log_sender {
+                            let _ = s.send(stream.clone()).await;
+                        } else {
+                            print!("{}", stream);
+                        }
                     } else if let Some(error) = info.error {
+                        if let Some(s) = &log_sender {
+                            let _ = s.send(format!("ERROR: {}", error)).await;
+                        }
                         return Err(anyhow::anyhow!("Docker build error: {}", error));
                     }
                 }

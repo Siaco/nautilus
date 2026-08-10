@@ -2,37 +2,34 @@ use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
 use crossterm::ExecutableCommand;
 use ratatui::prelude::*;
-use ratatui::widgets::{Block, Borders, Paragraph};
+use ratatui::widgets::{Block, Borders, Paragraph, List, ListItem};
 use std::io::stdout;
 use tokio::time::{interval, Duration};
 use futures_util::StreamExt;
 use anyhow::Result;
+use tokio::sync::mpsc;
 
 pub struct App {
     should_quit: bool,
-}
-
-impl Default for App {
-    fn default() -> Self {
-        Self::new()
-    }
+    logs: Vec<String>,
+    log_receiver: mpsc::Receiver<String>,
 }
 
 impl App {
-    pub fn new() -> Self {
-        Self { should_quit: false }
+    pub fn new(log_receiver: mpsc::Receiver<String>) -> Self {
+        Self { 
+            should_quit: false,
+            logs: Vec::new(),
+            log_receiver,
+        }
     }
 
     pub async fn run(&mut self) -> Result<()> {
-        // Setup terminal
         enable_raw_mode()?;
         stdout().execute(EnterAlternateScreen)?;
         let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
 
-        // Render loop ticker
         let mut tick_rate = interval(Duration::from_millis(16)); // ~60 FPS
-
-        // Async event stream
         let mut events = crossterm::event::EventStream::new();
 
         while !self.should_quit {
@@ -43,10 +40,16 @@ impl App {
                 Some(Ok(event)) = events.next() => {
                     self.handle_event(event);
                 }
+                Some(log_line) = self.log_receiver.recv() => {
+                    self.logs.push(log_line);
+                    // Keep buffer bounded
+                    if self.logs.len() > 1000 {
+                        self.logs.remove(0);
+                    }
+                }
             }
         }
 
-        // Teardown terminal
         disable_raw_mode()?;
         stdout().execute(LeaveAlternateScreen)?;
         Ok(())
@@ -54,16 +57,57 @@ impl App {
 
     fn draw(&self, f: &mut Frame) {
         let size = f.size();
-        let block = Block::default()
-            .title("Nautilus Deck")
-            .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::Cyan));
-            
-        let text = Paragraph::new("Press 'q' or Ctrl+C to quit.")
-            .block(block)
-            .alignment(Alignment::Center);
+        
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(3), // Header
+                Constraint::Min(10),   // Main
+                Constraint::Length(3), // Footer
+            ])
+            .split(size);
 
-        f.render_widget(text, size);
+        let main_chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([
+                Constraint::Percentage(30), // DAG
+                Constraint::Percentage(70), // Logs
+            ])
+            .split(chunks[1]);
+
+        // Header
+        let header = Paragraph::new("Nautilus Execution Engine")
+            .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+            .alignment(Alignment::Center)
+            .block(Block::default().borders(Borders::ALL));
+        f.render_widget(header, chunks[0]);
+
+        // DAG Widget
+        // TODO: Map actual DAG nodes
+        let items = [
+            ListItem::new(" ⏳ build-image ").style(Style::default().fg(Color::DarkGray)),
+            ListItem::new(" 🌀 run-tests ").style(Style::default().fg(Color::Cyan)),
+            ListItem::new(" ✅ lint ").style(Style::default().fg(Color::Green)),
+            ListItem::new(" ❌ deploy ").style(Style::default().fg(Color::Red)),
+        ];
+        let dag_list = List::new(items)
+            .block(Block::default().title(" Pipeline DAG ").borders(Borders::ALL).border_style(Style::default().fg(Color::DarkGray)));
+        f.render_widget(dag_list, main_chunks[0]);
+
+        // Logs Widget
+        let log_items: Vec<ListItem> = self.logs
+            .iter()
+            .map(|l| ListItem::new(l.as_str()))
+            .collect();
+        let log_list = List::new(log_items)
+            .block(Block::default().title(" Live Logs ").borders(Borders::ALL).border_style(Style::default().fg(Color::DarkGray)));
+        f.render_widget(log_list, main_chunks[1]);
+
+        // Footer
+        let footer = Paragraph::new("Press 'q' or Ctrl+C to quit.")
+            .block(Block::default().borders(Borders::ALL))
+            .alignment(Alignment::Center);
+        f.render_widget(footer, chunks[2]);
     }
 
     fn handle_event(&mut self, event: Event) {

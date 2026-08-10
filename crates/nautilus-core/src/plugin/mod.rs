@@ -17,6 +17,7 @@ mod tests {
             &self,
             _ctx: &ExecutionContext,
             _args: &Option<HashMap<String, String>>,
+            _log_sender: Option<tokio::sync::mpsc::Sender<String>>,
         ) -> Result<ExecutionOutput, PluginError> {
             Ok(ExecutionOutput {
                 status: 0,
@@ -34,7 +35,7 @@ mod tests {
             workspace_path: std::path::PathBuf::from("/tmp"),
         };
 
-        let output = plugin.execute(&ctx, &None).await.unwrap();
+        let output = plugin.execute(&ctx, &None, None).await.unwrap();
         assert_eq!(output.status, 0);
         assert_eq!(output.stdout, "mocked");
     }

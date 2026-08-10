@@ -66,7 +66,17 @@ pipeline:
                 }
             }
 
-            let mut app = App::new();
+            let (log_sender, log_receiver) = tokio::sync::mpsc::channel(100);
+            
+            // Dummy background task to simulate logs for testing
+            tokio::spawn(async move {
+                for i in 0..100 {
+                    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+                    let _ = log_sender.send(format!("Simulation log output {}...", i)).await;
+                }
+            });
+
+            let mut app = App::new(log_receiver);
             app.run().await?;
         }
         Commands::Studio => {
