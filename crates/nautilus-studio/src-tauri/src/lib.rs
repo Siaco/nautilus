@@ -1,9 +1,9 @@
 mod models;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-use tauri::{AppHandle, Emitter};
-use crate::models::{ClusterStatus, PipelineResponse, LogEvent};
+use crate::models::{ClusterStatus, LogEvent, PipelineResponse};
 use nautilus_core::engine::k8s::KubeClient;
+use tauri::{AppHandle, Emitter};
 
 #[tauri::command]
 async fn get_cluster_status() -> Result<ClusterStatus, String> {
@@ -20,13 +20,26 @@ async fn get_cluster_status() -> Result<ClusterStatus, String> {
 }
 
 #[tauri::command]
-async fn run_pipeline(app: AppHandle, _manifest_path: Option<String>) -> Result<PipelineResponse, String> {
+async fn run_pipeline(
+    app: AppHandle,
+    _manifest_path: Option<String>,
+) -> Result<PipelineResponse, String> {
     tauri::async_runtime::spawn(async move {
         for i in 1..=10 {
             tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
-            let _ = app.emit("pipeline-log", LogEvent { line: format!("Executing step {}...", i) });
+            let _ = app.emit(
+                "pipeline-log",
+                LogEvent {
+                    line: format!("Executing step {}...", i),
+                },
+            );
         }
-        let _ = app.emit("pipeline-log", LogEvent { line: "Pipeline execution completed successfully.".to_string() });
+        let _ = app.emit(
+            "pipeline-log",
+            LogEvent {
+                line: "Pipeline execution completed successfully.".to_string(),
+            },
+        );
     });
 
     Ok(PipelineResponse {

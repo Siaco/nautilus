@@ -1,13 +1,15 @@
-use crossterm::event::{self, Event, KeyCode, KeyEventKind};
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
-use crossterm::ExecutableCommand;
-use ratatui::prelude::*;
-use ratatui::widgets::{Block, Borders, Paragraph, List, ListItem};
-use std::io::stdout;
-use tokio::time::{interval, Duration};
-use futures_util::StreamExt;
 use anyhow::Result;
+use crossterm::event::{self, Event, KeyCode, KeyEventKind};
+use crossterm::terminal::{
+    disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
+};
+use crossterm::ExecutableCommand;
+use futures_util::StreamExt;
+use ratatui::prelude::*;
+use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
+use std::io::stdout;
 use tokio::sync::mpsc;
+use tokio::time::{interval, Duration};
 
 pub struct App {
     should_quit: bool,
@@ -17,7 +19,7 @@ pub struct App {
 
 impl App {
     pub fn new(log_receiver: mpsc::Receiver<String>) -> Self {
-        Self { 
+        Self {
             should_quit: false,
             logs: Vec::new(),
             log_receiver,
@@ -57,7 +59,7 @@ impl App {
 
     fn draw(&self, f: &mut Frame) {
         let size = f.size();
-        
+
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
@@ -77,7 +79,11 @@ impl App {
 
         // Header
         let header = Paragraph::new("Nautilus Execution Engine")
-            .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+            .style(
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+            )
             .alignment(Alignment::Center)
             .block(Block::default().borders(Borders::ALL));
         f.render_widget(header, chunks[0]);
@@ -90,17 +96,26 @@ impl App {
             ListItem::new(" ✅ lint ").style(Style::default().fg(Color::Green)),
             ListItem::new(" ❌ deploy ").style(Style::default().fg(Color::Red)),
         ];
-        let dag_list = List::new(items)
-            .block(Block::default().title(" Pipeline DAG ").borders(Borders::ALL).border_style(Style::default().fg(Color::DarkGray)));
+        let dag_list = List::new(items).block(
+            Block::default()
+                .title(" Pipeline DAG ")
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::DarkGray)),
+        );
         f.render_widget(dag_list, main_chunks[0]);
 
         // Logs Widget
-        let log_items: Vec<ListItem> = self.logs
+        let log_items: Vec<ListItem> = self
+            .logs
             .iter()
             .map(|l| ListItem::new(l.as_str()))
             .collect();
-        let log_list = List::new(log_items)
-            .block(Block::default().title(" Live Logs ").borders(Borders::ALL).border_style(Style::default().fg(Color::DarkGray)));
+        let log_list = List::new(log_items).block(
+            Block::default()
+                .title(" Live Logs ")
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::DarkGray)),
+        );
         f.render_widget(log_list, main_chunks[1]);
 
         // Footer
@@ -115,7 +130,9 @@ impl App {
             if key.kind == KeyEventKind::Press {
                 match key.code {
                     KeyCode::Char('q') => self.should_quit = true,
-                    KeyCode::Char('c') if key.modifiers.contains(event::KeyModifiers::CONTROL) => self.should_quit = true,
+                    KeyCode::Char('c') if key.modifiers.contains(event::KeyModifiers::CONTROL) => {
+                        self.should_quit = true
+                    }
                     _ => {}
                 }
             }

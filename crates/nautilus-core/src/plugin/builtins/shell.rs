@@ -1,9 +1,9 @@
 use crate::plugin::types::{ExecutionContext, ExecutionOutput, Plugin, PluginError};
 use async_trait::async_trait;
 use std::collections::HashMap;
-use tokio::process::Command;
-use tokio::io::{AsyncBufReadExt, BufReader};
 use std::process::Stdio;
+use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::process::Command;
 
 pub struct ShellExecPlugin;
 

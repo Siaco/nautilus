@@ -1,13 +1,13 @@
 pub mod ui;
 
-use clap::{Parser, Subcommand};
-use std::path::PathBuf;
-use std::fs;
 use anyhow::Result;
-use ui::app::App;
-use std::panic;
+use clap::{Parser, Subcommand};
 use crossterm::terminal::{disable_raw_mode, LeaveAlternateScreen};
 use crossterm::ExecutableCommand;
+use std::fs;
+use std::panic;
+use std::path::PathBuf;
+use ui::app::App;
 
 #[derive(Parser)]
 #[command(name = "nautilus")]
@@ -41,7 +41,7 @@ fn setup_panic_hook() {
 #[tokio::main]
 async fn main() -> Result<()> {
     setup_panic_hook();
-    
+
     let cli = Cli::parse();
 
     match &cli.command {
@@ -67,12 +67,14 @@ pipeline:
             }
 
             let (log_sender, log_receiver) = tokio::sync::mpsc::channel(100);
-            
+
             // Dummy background task to simulate logs for testing
             tokio::spawn(async move {
                 for i in 0..100 {
                     tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
-                    let _ = log_sender.send(format!("Simulation log output {}...", i)).await;
+                    let _ = log_sender
+                        .send(format!("Simulation log output {}...", i))
+                        .await;
                 }
             });
 
