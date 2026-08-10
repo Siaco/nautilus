@@ -119,7 +119,7 @@ jobs:
         if: matrix.platform == 'windows-latest'
         shell: pwsh
         run: |
-          Compress-Archive -Path "crates/nautilus-studio/src-tauri/target/release/nautilus-studio.exe" -DestinationPath "nautilus-studio-portable-windows-x86_64.zip"
+          Compress-Archive -Path "target/release/nautilus-studio.exe" -DestinationPath "nautilus-studio-portable-windows-x86_64.zip"
 
       - name: Upload Portable Studio (Windows)
         if: matrix.platform == 'windows-latest'
