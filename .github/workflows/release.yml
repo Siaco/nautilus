@@ -42,7 +42,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Build CLI Binary
-        run: cargo build --release --p nautilus-cli --target ${{ matrix.target }}
+        run: cargo build --release -p nautilus-cli --target ${{ matrix.target }}
 
       - name: Package Binary (Unix)
         if: matrix.os != 'windows-latest'
