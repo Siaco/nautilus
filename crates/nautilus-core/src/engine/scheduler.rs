@@ -3,7 +3,9 @@ use crate::model::pipeline::Pipeline;
 use std::collections::HashMap;
 use tokio::sync::mpsc;
 
-#[derive(Debug, Clone, PartialEq)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum TaskState {
     Pending,
     Running,
