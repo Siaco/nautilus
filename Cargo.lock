@@ -2812,6 +2812,7 @@ dependencies = [
  "anyhow",
  "clap",
  "crossterm",
+ "futures-util",
  "nautilus-core",
  "ratatui",
  "tokio",

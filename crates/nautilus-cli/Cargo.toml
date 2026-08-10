@@ -10,3 +10,4 @@ crossterm.workspace = true
 clap.workspace = true
 tokio.workspace = true
 anyhow.workspace = true
+futures-util.workspace = true
