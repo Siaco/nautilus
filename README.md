@@ -11,22 +11,29 @@ Currently, Nautilus provides pre-built binaries via the GitHub Releases page:
 *(Note: Binaries may trigger SmartScreen/Gatekeeper warnings during the early beta until we integrate EV Code Signing.)*
 
 ### 2. Getting Started
-To get started with Nautilus, simply define your pipeline in a YAML format.
+To get started with Nautilus, simply run the executable in your directory:
+
+```bash
+nautilus run
+```
+
+If you don't provide a pipeline file, Nautilus will automatically generate a default `pipelines.yml` template for you in your current directory! It looks like this:
 
 ```yaml
 version: "1.0"
 pipeline:
-  name: "Example Pipeline"
+  name: "Default Pipeline"
   stages:
-    - id: "build"
+    - id: "hello"
       plugin: "shell"
       args:
-        command: "cargo build --release"
+        command: "echo 'Hello from Nautilus!'"
 ```
 
-Save this as `pipeline.yaml`, and run it using the CLI:
+You can then edit this `pipelines.yml` and trigger it again with `nautilus run`.
+If you want to use a specific file name, you can pass it directly:
 ```bash
-nautilus run pipeline.yaml
+nautilus run my-custom-pipeline.yml
 ```
 
 Alternatively, open Nautilus Studio, load your workspace, and trigger pipelines with a single click.
