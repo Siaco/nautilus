@@ -19,6 +19,8 @@ flate2.workspace = true
 kube.workspace = true
 k8s-openapi.workspace = true
 futures-util.workspace = true
+bollard.workspace = true
+bytes.workspace = true
 
 [dev-dependencies]
 tempfile = "3.10"
