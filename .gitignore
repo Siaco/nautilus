@@ -27,3 +27,5 @@ target
 *.swp
 *.log
 .env
+PRD.md
+BACKLOG.md
