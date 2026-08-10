@@ -1,4 +1,6 @@
-pub fn add(left: u64, right: u64) -> u64 {
+pub mod model;
+
+pub fn add(left: usize, right: usize) -> usize {
     left + right
 }
 
