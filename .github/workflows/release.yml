@@ -129,6 +129,20 @@ jobs:
           draft: true
           tag_name: ${{ github.ref_name }}
 
+      - name: Package Portable Studio (Linux)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          cd target/release
+          tar -czvf ../../nautilus-studio-portable-linux-x86_64.tar.gz nautilus-studio
+
+      - name: Upload Portable Studio (Linux)
+        if: matrix.platform == 'ubuntu-22.04'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: nautilus-studio-portable-linux-x86_64.tar.gz
+          draft: true
+          tag_name: ${{ github.ref_name }}
+
   publish-release:
     name: Publish Draft Release
     needs: [build-cli, build-studio]
