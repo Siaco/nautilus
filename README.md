@@ -1,6 +1,15 @@
 # nautilus
 
+<p align="center">
+  <img src="assets/hero.jpg" alt="Nautilus Hero Image" width="100%">
+</p>
+
 Nautilus is a high-performance, Rust-powered monorepo engineered to unify software deployment pipelines into a single ecosystem. From source acquisition to Kubernetes deploy, work seamlessly via **Nautilus Deck**—a keyboard-first terminal UI—or **Nautilus Studio**, a breathtaking Tauri desktop GUI featuring sleek glassmorphism and an interactive execution canvas. Fast, graph-based, and built for ultimate control.
+
+<p align="center">
+  <em>(TODO: Add a GIF of Nautilus Studio running a pipeline here)</em><br>
+  <em>(TODO: Add a GIF of Nautilus Deck TUI here)</em>
+</p>
 
 ## ✨ Core Features
 - **Engine (`nautilus-core`)**: A headless DAG (Directed Acyclic Graph) engine equipped with cycle detection, parallel task scheduling via Tokio, and built-in daemonless Docker/Kubernetes integration plugins.
