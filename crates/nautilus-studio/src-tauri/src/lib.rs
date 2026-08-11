@@ -30,19 +30,17 @@ async fn get_cluster_status() -> Result<ClusterStatus, String> {
 async fn list_pipelines() -> Result<Vec<PipelineInfo>, String> {
     let mut pipelines = Vec::new();
     let entries = fs::read_dir(".").map_err(|e| e.to_string())?;
-    for entry in entries {
-        if let Ok(entry) = entry {
-            let path = entry.path();
-            if path.is_file() {
-                if let Some(ext) = path.extension() {
-                    if ext == "yml" || ext == "yaml" {
-                        if let Ok(content) = fs::read_to_string(&path) {
-                            if let Ok(pipeline) = Pipeline::from_yaml(&content) {
-                                pipelines.push(PipelineInfo {
-                                    path: path.to_string_lossy().to_string(),
-                                    name: pipeline.name.clone(),
-                                });
-                            }
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_file() {
+            if let Some(ext) = path.extension() {
+                if ext == "yml" || ext == "yaml" {
+                    if let Ok(content) = fs::read_to_string(&path) {
+                        if let Ok(pipeline) = Pipeline::from_yaml(&content) {
+                            pipelines.push(PipelineInfo {
+                                path: path.to_string_lossy().to_string(),
+                                name: pipeline.name.clone(),
+                            });
                         }
                     }
                 }

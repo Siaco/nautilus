@@ -68,7 +68,7 @@ pipeline:
 
             let (log_sender, log_receiver) = tokio::sync::mpsc::channel(100);
 
-            let content = fs::read_to_string(&file)?;
+            let content = fs::read_to_string(file)?;
             match nautilus_core::model::pipeline::Pipeline::from_yaml(&content) {
                 Ok(pipeline) => {
                     tokio::spawn(async move {
