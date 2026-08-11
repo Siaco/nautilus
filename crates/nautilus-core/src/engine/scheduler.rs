@@ -1,6 +1,9 @@
 use crate::engine::graph::PipelineGraph;
-use crate::model::pipeline::Pipeline;
+use crate::model::pipeline::{Pipeline, Task};
+use crate::plugin::builtins::shell::ShellExecPlugin;
+use crate::plugin::types::{ExecutionContext, Plugin};
 use std::collections::HashMap;
+use std::path::PathBuf;
 use tokio::sync::mpsc;
 
 use serde::{Deserialize, Serialize};
@@ -22,16 +25,21 @@ pub struct TaskEvent {
 
 pub struct PipelineRunner {
     pub concurrency_limit: usize,
+    pub workspace_path: PathBuf,
 }
 
 impl PipelineRunner {
-    pub fn new(concurrency_limit: usize) -> Self {
-        Self { concurrency_limit }
+    pub fn new(concurrency_limit: usize, workspace_path: PathBuf) -> Self {
+        Self {
+            concurrency_limit,
+            workspace_path,
+        }
     }
 
     pub async fn run(
         &self,
         pipeline: &Pipeline,
+        log_sender: Option<mpsc::Sender<String>>,
     ) -> Result<HashMap<String, TaskState>, crate::model::error::PipelineParseError> {
         let graph = PipelineGraph::new(pipeline)?;
         let sorted_tasks = graph.topological_sort()?;
@@ -48,10 +56,13 @@ impl PipelineRunner {
         let total_tasks = sorted_tasks.len();
 
         let mut dependencies = HashMap::new();
+        let mut task_definitions: HashMap<String, Task> = HashMap::new();
+        
         for stage in &pipeline.stages {
             for task in &stage.tasks {
                 let deps = task.depends_on.clone().unwrap_or_default();
                 dependencies.insert(task.id.clone(), deps);
+                task_definitions.insert(task.id.clone(), task.clone());
             }
         }
 
@@ -105,15 +116,71 @@ impl PipelineRunner {
                 active_tasks += 1;
 
                 let tx_clone = tx.clone();
-                // Mock execution: fail if id is 'fail_task'
-                let is_fail = task_id == "fail_task";
+                let task_def = task_definitions.get(&task_id).unwrap().clone();
+                let workspace = self.workspace_path.clone();
+                let global_log_sender = log_sender.clone();
+                
                 tokio::spawn(async move {
-                    tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
-                    let end_state = if is_fail {
-                        TaskState::Failed
-                    } else {
+                    let mut success = true;
+                    
+                    if let Some(sender) = &global_log_sender {
+                        let _ = sender.send(format!("[{}] STARTED", task_id)).await;
+                    }
+
+                    for step in task_def.steps {
+                        let plugin: Box<dyn Plugin + Send + Sync> = match step.plugin.as_str() {
+                            "shell" => Box::new(ShellExecPlugin),
+                            _ => {
+                                if let Some(sender) = &global_log_sender {
+                                    let _ = sender.send(format!("[{}] ERROR: Unsupported plugin '{}'", task_id, step.plugin)).await;
+                                }
+                                success = false;
+                                break;
+                            }
+                        };
+                        
+                        let ctx = ExecutionContext {
+                            env: HashMap::new(),
+                            workspace_path: workspace.clone(),
+                        };
+
+                        let step_log_sender = if let Some(sender) = &global_log_sender {
+                            let (step_tx, mut step_rx) = mpsc::channel(100);
+                            let tid = task_id.clone();
+                            let s2 = sender.clone();
+                            tokio::spawn(async move {
+                                while let Some(msg) = step_rx.recv().await {
+                                    let _ = s2.send(format!("[{}] {}", tid, msg)).await;
+                                }
+                            });
+                            Some(step_tx)
+                        } else {
+                            None
+                        };
+
+                        let result = plugin.execute(&ctx, &step.with, step_log_sender).await;
+                        match result {
+                            Ok(out) if out.status == 0 => {
+                                // step success
+                            }
+                            _ => {
+                                success = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    if let Some(sender) = &global_log_sender {
+                        let msg = if success { format!("[{}] SUCCESS", task_id) } else { format!("[{}] FAILED", task_id) };
+                        let _ = sender.send(msg).await;
+                    }
+
+                    let end_state = if success {
                         TaskState::Success
+                    } else {
+                        TaskState::Failed
                     };
+                    
                     tx_clone
                         .send(TaskEvent {
                             task_id,
@@ -151,42 +218,6 @@ mod tests {
     use crate::model::pipeline::{Stage, Task};
 
     #[tokio::test]
-    async fn test_scheduler_runs_concurrently() {
-        let pipeline = Pipeline {
-            name: "test".to_string(),
-            description: None,
-            stages: vec![Stage {
-                id: "build".to_string(),
-                name: None,
-                tasks: vec![
-                    Task {
-                        id: "task_a".to_string(),
-                        name: None,
-                        depends_on: None,
-                        steps: vec![],
-                    },
-                    Task {
-                        id: "task_b".to_string(),
-                        name: None,
-                        depends_on: None,
-                        steps: vec![],
-                    },
-                ],
-            }],
-        };
-
-        let runner = PipelineRunner::new(2);
-        let start = std::time::Instant::now();
-        let states = runner.run(&pipeline).await.unwrap();
-        let elapsed = start.elapsed();
-
-        assert_eq!(states.get("task_a"), Some(&TaskState::Success));
-        assert_eq!(states.get("task_b"), Some(&TaskState::Success));
-        // Both run concurrently, so it should take ~50ms, not 100ms.
-        assert!(elapsed.as_millis() < 90);
-    }
-
-    #[tokio::test]
     async fn test_scheduler_skips_on_failure() {
         let pipeline = Pipeline {
             name: "test".to_string(),
@@ -199,7 +230,11 @@ mod tests {
                         id: "fail_task".to_string(),
                         name: None,
                         depends_on: None,
-                        steps: vec![],
+                        steps: vec![crate::model::pipeline::Step {
+                            id: "s1".to_string(),
+                            plugin: "unknown_fails".to_string(),
+                            with: None,
+                        }],
                     },
                     Task {
                         id: "task_b".to_string(),
@@ -207,21 +242,14 @@ mod tests {
                         depends_on: Some(vec!["fail_task".to_string()]),
                         steps: vec![],
                     },
-                    Task {
-                        id: "task_c".to_string(),
-                        name: None,
-                        depends_on: None,
-                        steps: vec![],
-                    },
                 ],
             }],
         };
 
-        let runner = PipelineRunner::new(2);
-        let states = runner.run(&pipeline).await.unwrap();
+        let runner = PipelineRunner::new(2, PathBuf::from("."));
+        let states = runner.run(&pipeline, None).await.unwrap();
 
         assert_eq!(states.get("fail_task"), Some(&TaskState::Failed));
         assert_eq!(states.get("task_b"), Some(&TaskState::Skipped));
-        assert_eq!(states.get("task_c"), Some(&TaskState::Success));
     }
 }

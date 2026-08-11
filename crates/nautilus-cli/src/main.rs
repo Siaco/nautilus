@@ -68,15 +68,18 @@ pipeline:
 
             let (log_sender, log_receiver) = tokio::sync::mpsc::channel(100);
 
-            // Dummy background task to simulate logs for testing
-            tokio::spawn(async move {
-                for i in 0..100 {
-                    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
-                    let _ = log_sender
-                        .send(format!("Simulation log output {}...", i))
-                        .await;
+            let content = fs::read_to_string(&file)?;
+            match nautilus_core::model::pipeline::Pipeline::from_yaml(&content) {
+                Ok(pipeline) => {
+                    tokio::spawn(async move {
+                        let runner = nautilus_core::engine::scheduler::PipelineRunner::new(4, std::env::current_dir().unwrap());
+                        let _ = runner.run(&pipeline, Some(log_sender)).await;
+                    });
                 }
-            });
+                Err(e) => {
+                    anyhow::bail!("Failed to parse pipeline: {:?}", e);
+                }
+            }
 
             let mut app = App::new(log_receiver);
             app.run().await?;
