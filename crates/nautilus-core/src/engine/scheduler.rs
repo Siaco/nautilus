@@ -57,7 +57,7 @@ impl PipelineRunner {
 
         let mut dependencies = HashMap::new();
         let mut task_definitions: HashMap<String, Task> = HashMap::new();
-        
+
         for stage in &pipeline.stages {
             for task in &stage.tasks {
                 let deps = task.depends_on.clone().unwrap_or_default();
@@ -119,10 +119,10 @@ impl PipelineRunner {
                 let task_def = task_definitions.get(&task_id).unwrap().clone();
                 let workspace = self.workspace_path.clone();
                 let global_log_sender = log_sender.clone();
-                
+
                 tokio::spawn(async move {
                     let mut success = true;
-                    
+
                     if let Some(sender) = &global_log_sender {
                         let _ = sender.send(format!("[{}] STARTED", task_id)).await;
                     }
@@ -132,13 +132,18 @@ impl PipelineRunner {
                             "shell" => Box::new(ShellExecPlugin),
                             _ => {
                                 if let Some(sender) = &global_log_sender {
-                                    let _ = sender.send(format!("[{}] ERROR: Unsupported plugin '{}'", task_id, step.plugin)).await;
+                                    let _ = sender
+                                        .send(format!(
+                                            "[{}] ERROR: Unsupported plugin '{}'",
+                                            task_id, step.plugin
+                                        ))
+                                        .await;
                                 }
                                 success = false;
                                 break;
                             }
                         };
-                        
+
                         let ctx = ExecutionContext {
                             env: HashMap::new(),
                             workspace_path: workspace.clone(),
@@ -171,7 +176,11 @@ impl PipelineRunner {
                     }
 
                     if let Some(sender) = &global_log_sender {
-                        let msg = if success { format!("[{}] SUCCESS", task_id) } else { format!("[{}] FAILED", task_id) };
+                        let msg = if success {
+                            format!("[{}] SUCCESS", task_id)
+                        } else {
+                            format!("[{}] FAILED", task_id)
+                        };
                         let _ = sender.send(msg).await;
                     }
 
@@ -180,7 +189,7 @@ impl PipelineRunner {
                     } else {
                         TaskState::Failed
                     };
-                    
+
                     tx_clone
                         .send(TaskEvent {
                             task_id,

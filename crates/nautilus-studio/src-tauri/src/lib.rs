@@ -1,11 +1,14 @@
 mod models;
 
-use crate::models::{ClusterStatus, LogEvent, PipelineResponse, PipelineInfo, PipelineTopology, PipelineTopologyNode, PipelineTopologyEdge, NodeStatusEvent};
+use crate::models::{
+    ClusterStatus, LogEvent, NodeStatusEvent, PipelineInfo, PipelineResponse, PipelineTopology,
+    PipelineTopologyEdge, PipelineTopologyNode,
+};
 use nautilus_core::engine::k8s::KubeClient;
-use nautilus_core::model::pipeline::Pipeline;
 use nautilus_core::engine::scheduler::PipelineRunner;
-use tauri::{AppHandle, Emitter};
+use nautilus_core::model::pipeline::Pipeline;
 use std::fs;
+use tauri::{AppHandle, Emitter};
 // use std::path::PathBuf;
 use tokio::sync::mpsc;
 
@@ -53,17 +56,17 @@ async fn list_pipelines() -> Result<Vec<PipelineInfo>, String> {
 async fn load_pipeline(path: String) -> Result<PipelineTopology, String> {
     let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
     let pipeline = Pipeline::from_yaml(&content).map_err(|e| format!("{:?}", e))?;
-    
+
     let mut nodes = Vec::new();
     let mut edges = Vec::new();
-    
+
     for stage in &pipeline.stages {
         for task in &stage.tasks {
             nodes.push(PipelineTopologyNode {
                 id: task.id.clone(),
                 label: task.name.clone().unwrap_or(task.id.clone()),
             });
-            
+
             if let Some(deps) = &task.depends_on {
                 for dep in deps {
                     edges.push(PipelineTopologyEdge {
@@ -74,7 +77,7 @@ async fn load_pipeline(path: String) -> Result<PipelineTopology, String> {
             }
         }
     }
-    
+
     Ok(PipelineTopology { nodes, edges })
 }
 
@@ -86,19 +89,19 @@ async fn run_pipeline(
     let path = manifest_path.unwrap_or_else(|| "pipelines.yml".to_string());
     let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
     let pipeline = Pipeline::from_yaml(&content).map_err(|e| format!("{:?}", e))?;
-    
+
     let (tx, mut rx) = mpsc::channel::<String>(100);
-    
+
     tauri::async_runtime::spawn(async move {
         // Stream logs to UI
         let app_clone = app.clone();
         tokio::spawn(async move {
             while let Some(msg) = rx.recv().await {
-                // Parse msg to see if it's a node status event 
+                // Parse msg to see if it's a node status event
                 if msg.contains("STARTED") || msg.contains("SUCCESS") || msg.contains("FAILED") {
                     if let Some(start) = msg.find('[') {
                         if let Some(end) = msg.find(']') {
-                            let node_id = &msg[start+1..end];
+                            let node_id = &msg[start + 1..end];
                             let status = if msg.contains("STARTED") {
                                 "running"
                             } else if msg.contains("SUCCESS") {
@@ -106,22 +109,24 @@ async fn run_pipeline(
                             } else {
                                 "failed"
                             };
-                            let _ = app_clone.emit("node-status", NodeStatusEvent {
-                                node_id: node_id.to_string(),
-                                status: status.to_string(),
-                            });
+                            let _ = app_clone.emit(
+                                "node-status",
+                                NodeStatusEvent {
+                                    node_id: node_id.to_string(),
+                                    status: status.to_string(),
+                                },
+                            );
                         }
                     }
                 }
-                
-                let _ = app_clone.emit(
-                    "pipeline-log",
-                    LogEvent { line: msg },
-                );
+
+                let _ = app_clone.emit("pipeline-log", LogEvent { line: msg });
             }
             let _ = app_clone.emit(
                 "pipeline-log",
-                LogEvent { line: "Pipeline execution finished.".to_string() },
+                LogEvent {
+                    line: "Pipeline execution finished.".to_string(),
+                },
             );
         });
 

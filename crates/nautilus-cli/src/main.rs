@@ -72,7 +72,10 @@ pipeline:
             match nautilus_core::model::pipeline::Pipeline::from_yaml(&content) {
                 Ok(pipeline) => {
                     tokio::spawn(async move {
-                        let runner = nautilus_core::engine::scheduler::PipelineRunner::new(4, std::env::current_dir().unwrap());
+                        let runner = nautilus_core::engine::scheduler::PipelineRunner::new(
+                            4,
+                            std::env::current_dir().unwrap(),
+                        );
                         let _ = runner.run(&pipeline, Some(log_sender)).await;
                     });
                 }
