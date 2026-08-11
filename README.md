@@ -1,17 +1,25 @@
 # nautilus
-Nautilus is a high-performance, Rust-powered monorepo engineered to unify software deployment pipelines into a single ecosystem. From source acquisition to Kubernetes deploy, work seamlessly via Nautilus Deck—a keyboard-first TUI—or Nautilus Studio, a Tauri desktop GUI with sleek glassmorphism. Fast, graph-based, and built for control.
+
+Nautilus is a high-performance, Rust-powered monorepo engineered to unify software deployment pipelines into a single ecosystem. From source acquisition to Kubernetes deploy, work seamlessly via **Nautilus Deck**—a keyboard-first terminal UI—or **Nautilus Studio**, a breathtaking Tauri desktop GUI featuring sleek glassmorphism and an interactive execution canvas. Fast, graph-based, and built for ultimate control.
+
+## ✨ Core Features
+- **Engine (`nautilus-core`)**: A headless DAG (Directed Acyclic Graph) engine equipped with cycle detection, parallel task scheduling via Tokio, and built-in daemonless Docker/Kubernetes integration plugins.
+- **Nautilus Deck (`nautilus-cli`)**: A blazing-fast 60FPS Terminal UI built on `ratatui` featuring Vim-style keyboard navigation, dynamic pipeline viewing, and high-throughput log tailing.
+- **Nautilus Studio (`nautilus-studio`)**: A beautiful, cross-platform Tauri v2 desktop application. Features a fully animated `React Flow` Pipeline Canvas with auto-layout, streaming IPC event logs, and a responsive TailwindCSS v4 glassmorphism shell.
+
+---
 
 ## 🧑‍💻 User Guide
 
 ### 1. Installation
-Currently, Nautilus provides pre-built binaries via the GitHub Releases page:
-- **Nautilus CLI:** A powerful terminal-based execution engine. Download the executable and add it to your system PATH.
-- **Nautilus Studio:** A portable Desktop GUI (Tauri app). Download the zip, extract it, and run `nautilus-studio.exe` (Windows) or the equivalent on your OS.
+Currently, Nautilus provides pre-built native binaries via our automated GitHub Actions CI pipeline on the Releases page:
+- **Nautilus CLI:** Download the lightweight terminal executable (`.exe`, `.tar.gz`) for your OS and add it to your system PATH.
+- **Nautilus Studio:** Download the native Desktop Installer (`.msi`, `.dmg`, `.AppImage`), run it, and launch the GUI natively on your machine!
 
-*(Note: Binaries may trigger SmartScreen/Gatekeeper warnings during the early beta until we integrate EV Code Signing.)*
+*(Note: Binaries may trigger SmartScreen/Gatekeeper warnings during early releases until we integrate EV Code Signing).*
 
 ### 2. Getting Started
-To get started with Nautilus, simply run the executable in your directory:
+To get started from the terminal, simply run the executable in your directory:
 
 ```bash
 nautilus run
@@ -36,17 +44,17 @@ If you want to use a specific file name, you can pass it directly:
 nautilus run my-custom-pipeline.yml
 ```
 
-Alternatively, open Nautilus Studio, load your workspace, and trigger pipelines with a single click.
+Alternatively, open **Nautilus Studio**, load your workspace, and interact with the pipeline canvas to trigger executions with a single click.
 
 ---
 
 ## 🛠️ Developer Guide
 
 ### 1. Architecture Overview
-Nautilus is a Cargo Workspace containing several integrated components:
+Nautilus is a Cargo Workspace containing three primary integrated crates:
 - `nautilus-core`: The headless DAG execution engine, state manager, and trait-based plugin system.
 - `nautilus-cli`: The terminal user interface (TUI) and argument parser built on top of `clap`.
-- `nautilus-studio`: The React/TypeScript frontend wrapped in a Tauri desktop shell.
+- `nautilus-studio`: The React/TypeScript frontend wrapped in a Tauri v2 desktop shell.
 
 ### 2. Development Setup
 
@@ -56,14 +64,10 @@ Nautilus is a Cargo Workspace containing several integrated components:
 - Platform-specific build tools (e.g. C++ build tools for Windows, `build-essential` & `libwebkit2gtk-4.1-dev` for Linux).
 
 #### Building the Monorepo
-You can build the entire Rust workspace at once:
+You can build and test the entire Rust workspace at once:
 ```bash
-cargo build
-```
-
-To run the unit and integration test suites:
-```bash
-cargo test
+cargo build --workspace
+cargo test --workspace
 ```
 
 #### Running Nautilus Studio locally
@@ -74,7 +78,7 @@ npm run tauri dev
 ```
 
 ### 3. Adding a Plugin
-Plugins implement the asynchronous `Plugin` interface located in `nautilus-core`. Create a new struct under `crates/nautilus-core/src/plugin/builtins/`, implement `execute(&self, ctx: &ExecutionContext)`, and register it in the plugin registry!
+Plugins implement the asynchronous `Plugin` interface located in `nautilus-core`. Create a new struct under `crates/nautilus-core/src/plugin/builtins/`, implement `execute(&self, ctx: &ExecutionContext, ...)` and define your logic natively in Rust!
 
 ---
 
