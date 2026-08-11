@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
 body {
   background-image: radial-gradient(circle at top, rgba(99, 102, 241, 0.15), transparent 80%);
   min-height: 100vh;
