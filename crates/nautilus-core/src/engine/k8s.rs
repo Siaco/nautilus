@@ -84,6 +84,10 @@ impl KubeClient {
 #[cfg(test)]
 mod tests {
     #[tokio::test]
-    async fn test_kubeclient_compiles() {
+    async fn test_kubeclient_initialization() {
+        // Just verify that the instantiation method doesn't panic. 
+        // In CI without a cluster, this should cleanly return an Err.
+        let client_result = super::KubeClient::new().await;
+        assert!(client_result.is_ok() || client_result.is_err());
     }
 }

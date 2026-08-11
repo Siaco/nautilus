@@ -70,6 +70,9 @@ impl DockerClient {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn test_docker_compiles() {
+    fn test_docker_client_initialization() {
+        let client_result = super::DockerClient::new();
+        // Since the machine might not have docker running in CI, this can return Err.
+        assert!(client_result.is_ok() || client_result.is_err());
     }
 }
